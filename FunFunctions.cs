@@ -1,15 +1,25 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
 using IksAdminApi;
 using Microsoft.Extensions.Localization;
 
-namespace FunCommands;
+namespace IksAdmin_FunCommands;
 
 public static class FunFunctions
 {
     private static readonly IIksAdminApi Api = AdminUtils.CoreApi;
+    
     private static readonly IStringLocalizer Localizer = Main.Instance.Localizer;
+    
+    /// <summary>
+    /// Key = Slot <br/>
+    /// Value = Speed
+    /// </summary>
+    private static readonly Dictionary<int, float> PlayersSpeed = [];
+    
+    
     
     public static void RConVar(
         CCSPlayerController caller, 
@@ -37,9 +47,38 @@ public static class FunFunctions
         if (!ValidateAliveTarget(caller, target, identityType))
             return;
         
+        var pawn = target.PlayerPawn.Value;
+        if (pawn == null) return;
+        
         if (state == null)
-            target.MoveType = target.MoveType == MoveType_t.MOVETYPE_NOCLIP ? MoveType_t.MOVETYPE_WALK : MoveType_t.MOVETYPE_NOCLIP;
-        else target.MoveType = (bool)state ? MoveType_t.MOVETYPE_NOCLIP : MoveType_t.MOVETYPE_WALK;
+        {
+            
+            if (pawn!.MoveType == MoveType_t.MOVETYPE_NOCLIP)
+            {
+                pawn.MoveType = MoveType_t.MOVETYPE_WALK;
+                Schema.SetSchemaValue(pawn.Handle, "CBaseEntity", "m_nActualMoveType", 2); // walk
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+            }
+            else
+            {
+                pawn.MoveType = MoveType_t.MOVETYPE_NOCLIP;
+                Schema.SetSchemaValue(pawn.Handle, "CBaseEntity", "m_nActualMoveType", 8); // noclip
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+            }
+        }
+        else
+        {
+            if ((bool)state)
+            {
+                pawn.MoveType = MoveType_t.MOVETYPE_NOCLIP;
+                Schema.SetSchemaValue(pawn.Handle, "CBaseEntity", "m_nActualMoveType", 8); // noclip
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+            } 
+            
+            pawn.MoveType = MoveType_t.MOVETYPE_NOCLIP;
+            Schema.SetSchemaValue(pawn.Handle, "CBaseEntity", "m_nActualMoveType", 8); // noclip
+            Utilities.SetStateChanged(pawn, "CBaseEntity", "m_MoveType");
+        }
         
         caller.Print(Localizer["Message.Noclip"].AReplace(
             ["target", "value"], 
@@ -70,6 +109,42 @@ public static class FunFunctions
         caller.Print(Localizer["Message.SetMoney"].AReplace(
             ["target", "value"], 
             [target.PlayerName, moneyAmount]
+        ));
+    }
+    
+    public static void SetSpeed(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        float speed,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+
+        target.SetSpeed(speed);
+        
+        caller.Print(Localizer["Message.SetSpeed"].AReplace(
+            ["target", "value"], 
+            [target.PlayerName, speed]
+        ));
+    }
+    
+    public static void SetScale(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        float scale,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+
+        target.SetScale(scale);
+        
+        caller.Print(Localizer["Message.SetScale"].AReplace(
+            ["target", "value"], 
+            [target.PlayerName, scale]
         ));
     }
     
@@ -122,6 +197,29 @@ public static class FunFunctions
         caller.Print(Localizer["Message.TakeMoney"].AReplace(
             ["target", "value"], 
             [target.PlayerName, moneyAmount]
+        ));
+    }
+    
+    public static void SetHp(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        int health,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+
+        if (health > target.PlayerPawn.Value!.MaxHealth)
+        {
+            target.PlayerPawn.Value.MaxHealth = health;
+        }
+		
+        Utilities.SetStateChanged(target.PlayerPawn.Value, "CBaseEntity", "m_iHealth");
+        
+        caller.Print(Localizer["Message.SetHp"].AReplace(
+            ["target", "value"],
+            [target.PlayerName, health]
         ));
     }
     
@@ -181,6 +279,14 @@ public static class FunFunctions
             return false;
         }
 
+        if (!target.IsBot && !Api.CanDoActionWithPlayer(caller.GetSteamId(), target.GetSteamId()))
+        {
+            if (identityType is IdentityType.Name or IdentityType.UserId or IdentityType.SteamId)
+                caller.Print(Localizer["Error.NotEnoughPermission"].AReplace(["target"], [target.PlayerName]));
+            
+            return false;
+        }
+
         return true;
     }
     
@@ -202,5 +308,28 @@ public static class FunFunctions
         }
 
         return true;
+    }
+
+    public static HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        
+        if (player == null || !player.PawnIsAlive) return HookResult.Continue;
+        
+        var slot = player.Slot;
+        
+        if (!PlayersSpeed.TryGetValue(slot, out var speed)) return HookResult.Continue;
+        
+        player.SetSpeed(speed);
+        
+        return HookResult.Continue;
+    }
+
+    public static HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
+    {
+        if (Main.Config.CleanSpeedAfterRound)
+            PlayersSpeed.Clear();
+            
+        return HookResult.Continue;
     }
 }

@@ -2,17 +2,43 @@
 using CounterStrikeSharp.API.Modules.Menu;
 using IksAdminApi;
 
-namespace FunCommands;
+namespace IksAdmin_FunCommands;
 
 public class Main : AdminModule
 {
-    public override string ModuleName => "FunCommands";
+    public override string ModuleName => "IksAdmin_FunCommands";
     public override string ModuleVersion => "1.0.0";
     public override string ModuleAuthor => "iks__";
+
+    public static PluginConfig Config = null!;
 
     public override void Ready()
     {
         Api.MenuOpenPre += OnMenuOpen;
+        
+        Config = new PluginConfig().ReadOrCreate(AdminUtils.ConfigsDir + "/IksAdmin_Modules/FunCommands.json", new PluginConfig());
+        
+        //Api.RegisterPermission("fun_commands.rconvar", "z");
+
+        var defaultFlag = Config.DefaultFlag;
+        
+        Api.RegisterPermission("fun_commands.noclip", defaultFlag);
+        Api.RegisterPermission("fun_commands.set_money", defaultFlag);
+        Api.RegisterPermission("fun_commands.slap", defaultFlag);
+        Api.RegisterPermission("fun_commands.hp", defaultFlag);
+        Api.RegisterPermission("fun_commands.speed", defaultFlag);
+        Api.RegisterPermission("fun_commands.scale", defaultFlag);
+        
+        RegisterEventHandler<EventPlayerHurt>(FunFunctions.OnPlayerHurt);
+        RegisterEventHandler<EventRoundEnd>(FunFunctions.OnRoundEnd);
+    }
+
+    public override void Unload(bool hotReload)
+    {
+        base.Unload(hotReload);
+        
+        DeregisterEventHandler<EventPlayerHurt>(FunFunctions.OnPlayerHurt);
+        DeregisterEventHandler<EventRoundEnd>(FunFunctions.OnRoundEnd);
     }
 
     private HookResult OnMenuOpen(CCSPlayerController player, IDynamicMenu menu, IMenu gameMenu)
@@ -29,10 +55,7 @@ public class Main : AdminModule
 
     public override void InitializeCommands()
     {
-        //Api.RegisterPermission("fun_commands.rconvar", "z");
-        Api.RegisterPermission("fun_commands.noclip", "z");
-        Api.RegisterPermission("fun_commands.set_money", "z");
-        Api.RegisterPermission("fun_commands.slap", "z");
+        
         
         // Api.AddNewCommand(
         //     "rconvar",
@@ -62,10 +85,37 @@ public class Main : AdminModule
         );
         
         Api.AddNewCommand(
+            "hp",
+            "Set hp for player",
+            "fun_commands.hp",
+            "css_hp <#uid/#steamId/name/@...> <hp amount>",
+            Cmd.SetHp,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "speed",
+            "Set speed for player",
+            "fun_commands.speed",
+            "css_speed <#uid/#steamId/name/@...> <speed>",
+            Cmd.SetSpeed,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "scale",
+            "Set scale for player",
+            "fun_commands.scale",
+            "css_scale <#uid/#steamId/name/@...> <scale>",
+            Cmd.SetScale,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
             "set_money",
             "Set money for player",
             "fun_commands.set_money",
-            "css_set_money <#uid/#steamId/name/@...> <moneyAmount>",
+            "css_set_money <#uid/#steamId/name/@...> <money amount>",
             Cmd.SetMoney,
             minArgs: 2
         );
@@ -74,7 +124,7 @@ public class Main : AdminModule
             "add_money",
             "Set money for player",
             "fun_commands.set_money",
-            "css_add_money <#uid/#steamId/name/@...> <moneyAmount>",
+            "css_add_money <#uid/#steamId/name/@...> <money amount>",
             Cmd.AddMoney,
             minArgs: 2
         );
@@ -83,7 +133,7 @@ public class Main : AdminModule
             "take_money",
             "Set money for player",
             "fun_commands.set_money",
-            "css_take_money <#uid/#steamId/name/@...> <moneyAmount>",
+            "css_take_money <#uid/#steamId/name/@...> <money amount>",
             Cmd.TakeMoney,
             minArgs: 2
         );

@@ -2,7 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using IksAdminApi;
 
-namespace FunCommands;
+namespace IksAdmin_FunCommands;
 
 public static class Cmd
 {
@@ -44,11 +44,34 @@ public static class Cmd
         }, blockedArgs: GetBlockedIdentifiers("slap"));
     }
     
+    public static void SetHp(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetHp(caller, target!, int.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("hp"));
+    }
+    
+    public static void SetSpeed(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetSpeed(caller, target!, float.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("speed"));
+    }
+    
+    public static void SetScale(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetSpeed(caller, target!, float.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("scale"));
+    }
     public static void SetMoney(CCSPlayerController caller, List<string> args, CommandInfo _)
     {
         Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
         {
-            FunFunctions.SetMoney(caller, target!, int.Parse(args[1]), identityType);
+            FunFunctions.SetScale(caller, target!, int.Parse(args[1]), identityType);
         }, blockedArgs: GetBlockedIdentifiers("set_money"));
     }
     

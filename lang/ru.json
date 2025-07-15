@@ -6,6 +6,9 @@
     "MenuOption.SetMoney" : "Установить деньги",
     "MenuOption.AddMoney" : "Выдать деньги",
     "MenuOption.TakeMoney" : "Снять деньги",
+    "MenuOption.SetHp" : "Установить ХП",
+    "MenuOption.SetSpeed" : "Установить ХП",
+    "MenuOption.SetScale" : "Установить ХП",
 
     "Message.RConVar" : "{red}RConVar{white} установлено для игрока {target}",
     "Message.Noclip" : "{red}Noclip{white} установлен в значение {red}{value}{white} для игрока {red}{target}",
@@ -13,11 +16,19 @@
     "Message.AddMoney" : "Выдано {red}{value}{white} денег для игрока {red}{target}",
     "Message.TakeMoney" : "Снято {red}{value}{white} денег у игрока {red}{target}",
     "Message.Slap" : "Игрок {red}{target}{white} шлёпнут",
+    "Message.SetHp" : "Игроку {red}{target}{white} установлено {red}{value}ХП",
+    "Message.SetSpeed" : "Игроку {red}{target}{white} установлена скорость: {red}{value} ",
+    "Message.SetScale" : "Игроку {red}{target}{white} установлен размер: {red}{value} ",
 
     "Request.RConVar1" : "Введите квар: !<noclip>",
     "Request.RConVar2" : "Введите значение: !<true>",
-    "Request.MoneyAmount" : "Введите значение: !<true>",
+    
+    "Request.MoneyAmount" : "Введите кол-во денег: {red}!<123(целое число)>",
+    "Request.HpAmount" : "Введите кол-во ХП: {red}!<100(целое число)>",
+    "Request.Speed" : "Введите скорость: {red}!<5(число)>",
+    "Request.Scale" : "Введите размер: {red}!<5(число)>",
 
     "Error.TargetNotFound" : "Цель не найдена",
-    "Error.TargetMustBeAlive" : "Цель должна быть жива"
+    "Error.TargetMustBeAlive" : "Цель должна быть жива",
+    "Error.NotEnoughPermission" : "Нет прав для взаимодействия с игроком {red}{target}"
 }

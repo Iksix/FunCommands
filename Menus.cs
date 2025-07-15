@@ -3,7 +3,7 @@ using CounterStrikeSharp.API.Modules.Commands;
 using IksAdminApi;
 using Microsoft.Extensions.Localization;
 
-namespace FunCommands;
+namespace IksAdmin_FunCommands;
 
 public static class Menus
 {
@@ -26,11 +26,29 @@ public static class Menus
             (_, _) => { Noclip(caller, menu); }, 
             viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.noclip"));
         
-        menu.AddMenuOption("set_money", Localizer["MenuOption.SetMoney"], (_, _) => { SetMoney(caller, menu); }, viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_money"));
+        menu.AddMenuOption("set_money", Localizer["MenuOption.SetMoney"],
+            (_, _) => { SetMoney(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_money"));
         
-        menu.AddMenuOption("add_money", Localizer["MenuOption.AddMoney"], (_, _) => { AddMoney(caller, menu); }, viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_money"));
+        menu.AddMenuOption("add_money", Localizer["MenuOption.AddMoney"],
+            (_, _) => { AddMoney(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_money"));
         
-        menu.AddMenuOption("take_money", Localizer["MenuOption.TakeMoney"], (_, _) => { TakeMoney(caller, menu); }, viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_money"));
+        menu.AddMenuOption("take_money", Localizer["MenuOption.TakeMoney"],
+            (_, _) => { TakeMoney(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_money"));
+        
+        menu.AddMenuOption("set_hp", Localizer["MenuOption.SetHp"],
+            (_, _) => { SetHp(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.hp"));
+        
+        menu.AddMenuOption("set_speed", Localizer["MenuOption.SetSpeed"],
+            (_, _) => { SetSpeed(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.speed"));
+        
+        menu.AddMenuOption("set_scale", Localizer["MenuOption.SetScale"],
+            (_, _) => { SetScale(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.scale"));
         
         menu.Open(caller);
     }
@@ -46,6 +64,45 @@ public static class Menus
                 FunFunctions.SetMoney(caller, target.Controller!, int.Parse(amount));
             });
         }, backMenu: backMenu);
+    }
+    
+    private static void SetHp(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "set_hp", backMenu, target =>
+        {
+            caller.Print(Localizer["Request.HpAmount"]);
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetHp(caller, target, int.Parse(amount));
+            });
+        });
+    }
+    
+    private static void SetSpeed(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "set_speed", backMenu, target =>
+        {
+            caller.Print(Localizer["Request.Speed"]);
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetSpeed(caller, target, float.Parse(amount));
+            });
+        });
+    }
+    
+    private static void SetScale(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "set_scale", backMenu, target =>
+        {
+            caller.Print(Localizer["Request.Scale"]);
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetScale(caller, target, float.Parse(amount));
+            });
+        });
     }
     
     private static void AddMoney(CCSPlayerController caller, IDynamicMenu? backMenu)
@@ -76,10 +133,10 @@ public static class Menus
 
     private static void Noclip(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
-        MenuUtils.OpenSelectPlayer(caller, "noclip", (target, _) =>
+        OpenSelectAlivePlayer(caller, "noclip", backMenu, target =>
         {
-            FunFunctions.Noclip(caller, target.Controller!);
-        }, backMenu: backMenu);
+            FunFunctions.Noclip(caller, target);
+        }, includeBots: false);
     }
 
     private static void RConVar(CCSPlayerController caller, IDynamicMenu backMenu)
@@ -99,5 +156,22 @@ public static class Menus
                 });
             });
         }, backMenu: backMenu);
+    }
+
+    private static void OpenSelectAlivePlayer(CCSPlayerController caller, string prefix, IDynamicMenu? backMenu, Action<CCSPlayerController> action, bool includeBots = true)
+    {
+        var menu = Api.CreateMenu(prefix + "_select_alive_player", Api.Localizer["MenuTitle.Other.SelectPlayer"], backMenu: backMenu);
+
+        foreach (var player in PlayersUtils.GetOnlinePlayers(includeBots))
+        {
+            if (!player.PawnIsAlive) continue;
+            
+            menu.AddMenuOption(player.Slot.ToString(), player.PlayerName, (_, _) =>
+            { 
+                action.Invoke(player); 
+            });
+        }
+        
+        menu.Open(caller);
     }
 }
