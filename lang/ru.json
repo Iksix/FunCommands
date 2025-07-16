@@ -7,8 +7,8 @@
     "MenuOption.AddMoney" : "Выдать деньги",
     "MenuOption.TakeMoney" : "Снять деньги",
     "MenuOption.SetHp" : "Установить ХП",
-    "MenuOption.SetSpeed" : "Установить ХП",
-    "MenuOption.SetScale" : "Установить ХП",
+    "MenuOption.SetSpeed" : "Установить скорость",
+    "MenuOption.SetScale" : "Установить размер",
 
     "Message.RConVar" : "{red}RConVar{white} установлено для игрока {target}",
     "Message.Noclip" : "{red}Noclip{white} установлен в значение {red}{value}{white} для игрока {red}{target}",
@@ -30,5 +30,19 @@
 
     "Error.TargetNotFound" : "Цель не найдена",
     "Error.TargetMustBeAlive" : "Цель должна быть жива",
-    "Error.NotEnoughPermission" : "Нет прав для взаимодействия с игроком {red}{target}"
+    "Error.NotEnoughPermission" : "Нет прав для взаимодействия с игроком {red}{target}",
+    
+    // === [1.0.1] ===
+    "MenuTitle.SelectPosition" : "Выберите позицию",
+    "MenuOption.SavePosition" : "Сохранить позицию",
+    "MenuOption.Teleport" : "Телепорт",
+    "MenuOption.PingTp" : "Телепорт на метку",
+    
+    "Message.TeleportTo" : "Игрок {red}{target}{white} телепортирован в позицию: {red}{key} ",
+    "Message.PositionSaved" : "Позиция {red}{key}{white} сохранена!",
+    "Message.TurnTeleportOnPing" : "Телепорт на метку для игрока {red}{target}{white} установлен в значение: {red}{value}",
+
+    "Request.PositionKey" : "Введите ключ для позиции: {red}!название",
+    
+    "Error.UndefinedPosition" : "Позиция с этим ключом не найдена"
 }

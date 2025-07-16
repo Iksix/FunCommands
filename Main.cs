@@ -1,20 +1,37 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Menu;
 using IksAdminApi;
+using Microsoft.Extensions.Localization;
 
 namespace IksAdmin_FunCommands;
 
 public class Main : AdminModule
 {
     public override string ModuleName => "IksAdmin_FunCommands";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "iks__";
 
     public static PluginConfig Config = null!;
 
+    public static IStringLocalizer StringLocalizer = null!;
+    
+    /*
+    Для теста в будущем
+     
+    sub_1342910(&unk_1A2F120, &v10); ===== Player Ping
+    qword_1A2F108 = (__int64)"CHandle< CBaseEntity>";
+    qword_1A2F100 = (__int64)"m_hPlayerPing";
+    
+     __int64 __fastcall sub_1342910(__m128i *a1, __int64 a2)
+     
+    \x48\xC7\x47\x08\x00\x00\x00\x00\x48\xC7\x47\x10\x00\x00\x00\x00\x48\xC7\x47\x18\x00\x00\x00\x00\x48\x8B\x06
+    */
+
     public override void Ready()
     {
         Api.MenuOpenPre += OnMenuOpen;
+        
+        StringLocalizer = Localizer;
         
         Config = new PluginConfig().ReadOrCreate(AdminUtils.ConfigsDir + "/IksAdmin_Modules/FunCommands.json", new PluginConfig());
         
@@ -28,17 +45,23 @@ public class Main : AdminModule
         Api.RegisterPermission("fun_commands.hp", defaultFlag);
         Api.RegisterPermission("fun_commands.speed", defaultFlag);
         Api.RegisterPermission("fun_commands.scale", defaultFlag);
+        Api.RegisterPermission("fun_commands.tp", defaultFlag);
+        Api.RegisterPermission("fun_commands.pingtp", defaultFlag);
         
         RegisterEventHandler<EventPlayerHurt>(FunFunctions.OnPlayerHurt);
         RegisterEventHandler<EventRoundEnd>(FunFunctions.OnRoundEnd);
+        RegisterEventHandler<EventPlayerPing>(FunFunctions.OnPlayerPing, HookMode.Pre);
+        
+        RegisterListener<Listeners.OnClientDisconnect>(FunFunctions.OnClientDisconnect);
     }
-
+    
     public override void Unload(bool hotReload)
     {
         base.Unload(hotReload);
-        
+        Api.MenuOpenPre -= OnMenuOpen;
         DeregisterEventHandler<EventPlayerHurt>(FunFunctions.OnPlayerHurt);
         DeregisterEventHandler<EventRoundEnd>(FunFunctions.OnRoundEnd);
+        DeregisterEventHandler<EventPlayerPing>(FunFunctions.OnPlayerPing, HookMode.Pre);
     }
 
     private HookResult OnMenuOpen(CCSPlayerController player, IDynamicMenu menu, IMenu gameMenu)
@@ -136,6 +159,35 @@ public class Main : AdminModule
             "css_take_money <#uid/#steamId/name/@...> <money amount>",
             Cmd.TakeMoney,
             minArgs: 2
+        );
+        
+        // [1.0.1]
+        
+        Api.AddNewCommand(
+            "pingtp",
+            "Set money for player",
+            "fun_commands.pingtp",
+            "css_pingtp <#uid/#steamId/name/@...> <true/false>",
+            Cmd.TurnTeleportOnPing,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "tp",
+            "Set money for player",
+            "fun_commands.tp",
+            "css_tp <#uid/#steamId/name/@...> <position key>",
+            Cmd.Teleport,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "savepos",
+            "Set money for player",
+            "fun_commands.tp",
+            "css_savepos <position key>",
+            Cmd.SavePos,
+            minArgs: 1
         );
     }
 }

@@ -67,6 +67,28 @@ public static class Cmd
             FunFunctions.SetSpeed(caller, target!, float.Parse(args[1]), identityType);
         }, blockedArgs: GetBlockedIdentifiers("scale"));
     }
+    
+    public static void SavePos(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        FunFunctions.SaveTeleportPosition(caller, args[0]);
+    }
+    
+    public static void Teleport(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.TeleportToSavedPos(caller, target!, args[1], identityType);
+        }, blockedArgs: GetBlockedIdentifiers("tp"));
+    }
+    
+    public static void TurnTeleportOnPing(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.TurnTeleportOnPing(caller, target!, bool.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("pingtp"));
+    }
+    
     public static void SetMoney(CCSPlayerController caller, List<string> args, CommandInfo _)
     {
         Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>

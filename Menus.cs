@@ -8,7 +8,7 @@ namespace IksAdmin_FunCommands;
 public static class Menus
 {
     private static readonly IIksAdminApi Api = AdminUtils.CoreApi;
-    private static readonly IStringLocalizer Localizer = Main.Instance.Localizer;
+    private static readonly IStringLocalizer Localizer = Main.StringLocalizer;
     
     public static void OpenFunMenu(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
@@ -50,12 +50,25 @@ public static class Menus
             (_, _) => { SetScale(caller, menu); },
             viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.scale"));
         
+        menu.AddMenuOption("save_position", Localizer["MenuOption.SavePosition"],
+            (_, _) => { SavePosition(caller, backMenu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.tp"));
+        
+        menu.AddMenuOption("teleport", Localizer["MenuOption.Teleport"],
+            (_, _) => { Teleport(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.tp"),
+            disabled: !FunFunctions.PlayersSavedTeleportPositions.ContainsKey(caller.GetSteamId()));
+        
+        menu.AddMenuOption("pingtp", Localizer["MenuOption.PingTp"],
+            (_, _) => { TurnPingTp(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.pingtp"));
+        
         menu.Open(caller);
     }
 
     private static void SetMoney(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
-        MenuUtils.OpenSelectPlayer(caller, "set_money", (target, _) =>
+        OpenSelectPlayer(caller, "set_money", (target, _) =>
         {
             caller.Print(Localizer["Request.MoneyAmount"]);
             
@@ -66,6 +79,73 @@ public static class Menus
         }, backMenu: backMenu);
     }
     
+    private static void SavePosition(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        caller.Print(Localizer["Request.PositionKey"]);
+            
+        Api.HookNextPlayerMessage(caller, key =>
+        {
+            FunFunctions.SaveTeleportPosition(caller, key);
+            OpenFunMenu(caller, backMenu);
+        });
+    }
+    
+    private static void TurnPingTp(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        var menu = Api.CreateMenu("select_tp_position", Localizer["MenuTitle.SelectPosition"], backMenu: backMenu);
+
+        foreach (var target in PlayersUtils.GetOnlinePlayers())
+        {
+            if (!Api.CanDoActionWithPlayer(caller.GetSteamId(), target.GetSteamId()))
+            {
+                continue;
+            }
+
+            var state = FunFunctions.PlayersWithTeleportOnPing.Contains(target.Slot);
+            
+            menu.AddMenuOption(target.GetSteamId(), target.PlayerName + (state ? " [+]" : " [-]"), (_, _) =>
+            {
+                FunFunctions.TurnTeleportOnPing(caller, target, !state);
+                TurnPingTp(caller, backMenu);
+            });
+        }
+
+        menu.Open(caller);
+    }
+    
+    private static void Teleport(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "teleport", backMenu, target =>
+        {
+            OpenSelectPositionMenu(caller, target, backMenu);
+        });
+    }
+
+    private static void OpenSelectPositionMenu(CCSPlayerController caller, CCSPlayerController target, IDynamicMenu? backMenu)
+    {
+        var menu = Api.CreateMenu("select_tp_position", Localizer["MenuTitle.SelectPosition"]);
+
+        menu.BackAction = _ => { Teleport(caller, backMenu); };
+
+        var positions = FunFunctions.PlayersSavedTeleportPositions[caller.GetSteamId()];
+
+        foreach (var position in positions)
+        {
+            menu.AddMenuOption(position.Key, position.Key, (_, _) =>
+            {
+                if (!target.PawnIsAlive)
+                {
+                    caller.Print(Localizer[Localizer["Error.TargetMustBeAlive"]]);
+                    return;
+                }
+                
+                FunFunctions.TeleportToSavedPos(caller, target, position.Key);
+            });
+        }
+
+        menu.Open(caller);
+    }
+
     private static void SetHp(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
         OpenSelectAlivePlayer(caller, "set_hp", backMenu, target =>
@@ -107,7 +187,7 @@ public static class Menus
     
     private static void AddMoney(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
-        MenuUtils.OpenSelectPlayer(caller, "add_money", (target, _) =>
+        OpenSelectPlayer(caller, "add_money", (target, _) =>
         {
             caller.Print(Localizer["Request.MoneyAmount"]);
             
@@ -120,7 +200,7 @@ public static class Menus
     
     private static void TakeMoney(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
-        MenuUtils.OpenSelectPlayer(caller, "take_money", (target, _) =>
+        OpenSelectPlayer(caller, "take_money", (target, _) =>
         {
             caller.Print(Localizer["Request.MoneyAmount"]);
 
@@ -141,7 +221,7 @@ public static class Menus
 
     private static void RConVar(CCSPlayerController caller, IDynamicMenu backMenu)
     {
-        MenuUtils.OpenSelectPlayer(caller, "rconvar", (target, _) =>
+        OpenSelectPlayer(caller, "rconvar", (target, _) =>
         {
             caller.Print(Localizer["Request.RConVar1"]);
             Api.HookNextPlayerMessage(caller, cvar =>
@@ -164,6 +244,11 @@ public static class Menus
 
         foreach (var player in PlayersUtils.GetOnlinePlayers(includeBots))
         {
+            if (!player.IsBot && !Api.CanDoActionWithPlayer(caller.GetSteamId(), player.GetSteamId()))
+            {
+                continue;
+            }
+            
             if (!player.PawnIsAlive) continue;
             
             menu.AddMenuOption(player.Slot.ToString(), player.PlayerName, (_, _) =>
@@ -172,6 +257,35 @@ public static class Menus
             });
         }
         
+        menu.Open(caller);
+    }
+    
+    public static void OpenSelectPlayer(CCSPlayerController caller, string idPrefix, Action<PlayerInfo, IDynamicMenu> action, bool includeBots = false, IDynamicMenu? backMenu = null, string? customTitle = null)
+    {
+        var menu = Api.CreateMenu(
+            idPrefix + "_select_player",
+            customTitle ?? Api.Localizer["MenuTitle.Other.SelectPlayer"],
+            titleColor: MenuColors.Gold,
+            backMenu: backMenu
+        );
+
+        var players = PlayersUtils.GetOnlinePlayers(includeBots);
+
+        foreach (var player in players)
+        {
+            if (!player.IsBot && !Api.CanDoActionWithPlayer(caller.GetSteamId(), player.GetSteamId()))
+            {
+                continue;
+            }
+            
+            var p = new PlayerInfo(player);
+            
+            menu.AddMenuOption(p.SteamId!, p.PlayerName, (_, _) =>
+            {
+                action.Invoke(p, menu);
+            });
+        }
+
         menu.Open(caller);
     }
 }

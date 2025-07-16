@@ -2,6 +2,7 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
+using IksAdmin_FunCommands.Extensions;
 using IksAdminApi;
 using Microsoft.Extensions.Localization;
 
@@ -11,7 +12,7 @@ public static class FunFunctions
 {
     private static readonly IIksAdminApi Api = AdminUtils.CoreApi;
     
-    private static readonly IStringLocalizer Localizer = Main.Instance.Localizer;
+    private static readonly IStringLocalizer Localizer = Main.StringLocalizer;
     
     /// <summary>
     /// Key = Slot <br/>
@@ -19,6 +20,16 @@ public static class FunFunctions
     /// </summary>
     private static readonly Dictionary<int, float> PlayersSpeed = [];
     
+    /// <summary>
+    /// Слоты игроков у которых включена функция телепорта на метку
+    /// </summary>
+    public static readonly List<int> PlayersWithTeleportOnPing = [];
+    
+    /// <summary>
+    /// Сохранённые позиции для телепорта <br/>
+    /// Key = SteamId
+    /// </summary>
+    public static readonly Dictionary<string, Dictionary<string, TeleportPosition>> PlayersSavedTeleportPositions = [];
     
     
     public static void RConVar(
@@ -53,7 +64,7 @@ public static class FunFunctions
         if (state == null)
         {
             
-            if (pawn!.MoveType == MoveType_t.MOVETYPE_NOCLIP)
+            if (pawn.MoveType == MoveType_t.MOVETYPE_NOCLIP)
             {
                 pawn.MoveType = MoveType_t.MOVETYPE_WALK;
                 Schema.SetSchemaValue(pawn.Handle, "CBaseEntity", "m_nActualMoveType", 2); // walk
@@ -82,8 +93,84 @@ public static class FunFunctions
         
         caller.Print(Localizer["Message.Noclip"].AReplace(
             ["target", "value"], 
-            [target.PlayerName, target.MoveType == MoveType_t.MOVETYPE_NOCLIP]
+            [target.PlayerName, pawn.MoveType == MoveType_t.MOVETYPE_NOCLIP]
             ));
+    }
+    
+    public static void TeleportToSavedPos(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        string positionKey,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+        
+        var pawn = target.PlayerPawn.Value;
+        if (pawn == null) return;
+
+        if (!PlayersSavedTeleportPositions.TryGetValue(caller.GetSteamId(), out var positions))
+        {
+            caller.Print(Localizer["Error.UndefinedPosition"]);
+            return;
+        }
+        
+        if (!positions.TryGetValue(positionKey, out var position))
+        {
+            caller.Print(Localizer["Error.UndefinedPosition"]);
+            return;
+        }
+        
+        target.TeleportTo(position);
+        
+        caller.Print(Localizer["Message.TeleportTo"].AReplace(
+            ["target", "key"],
+            [target.PlayerName, positionKey]
+            ));
+    }
+    
+    public static void SaveTeleportPosition(
+        CCSPlayerController caller, 
+        string positionKey
+    )
+    {
+        var origin = caller.Pawn.Value!.AbsOrigin!.Clone();
+        var angle = caller.Pawn.Value!.AbsRotation!.Clone();
+
+        if (!PlayersSavedTeleportPositions.ContainsKey(caller.GetSteamId()))
+            PlayersSavedTeleportPositions[caller.GetSteamId()] = [];
+        
+        PlayersSavedTeleportPositions[caller.GetSteamId()][positionKey] = new TeleportPosition(origin, angle);
+        
+        caller.Print(Localizer["Message.PositionSaved"].AReplace(
+            ["key"],
+            [positionKey]
+        ));
+    }
+    
+    public static void TurnTeleportOnPing(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        bool state,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateTarget(caller, target, identityType))
+            return;
+        var slot = target.Slot;
+        
+        PlayersWithTeleportOnPing.Remove(slot);
+        
+        if (state)
+        {
+            PlayersWithTeleportOnPing.Add(slot);
+        }
+        
+        caller.Print(Localizer["Message.TurnTeleportOnPing"].AReplace(
+            ["target", "value"],
+            [target.PlayerName, state]
+        ));
     }
     
     public static void SetMoney(
@@ -331,5 +418,27 @@ public static class FunFunctions
             PlayersSpeed.Clear();
             
         return HookResult.Continue;
+    }
+    
+    public static HookResult OnPlayerPing(EventPlayerPing @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+
+        if (player == null || !player.IsValid || player.IsBot || !player.PawnIsAlive) return HookResult.Continue;
+        
+        if (!PlayersWithTeleportOnPing.Contains(player.Slot)) return HookResult.Continue;
+        
+        var vector = new Vector(@event.X, @event.Y, @event.Z);
+        
+        player.PlayerPawn.Value!.Teleport(vector);
+        
+        info.DontBroadcast = true;
+        return HookResult.Stop;
+    }
+
+    public static void OnClientDisconnect(int playerSlot)
+    {
+        PlayersSpeed.Remove(playerSlot);
+        PlayersWithTeleportOnPing.Remove(playerSlot);
     }
 }

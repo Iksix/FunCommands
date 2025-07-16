@@ -1,7 +1,8 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Utils;
 
-namespace IksAdmin_FunCommands;
+namespace IksAdmin_FunCommands.Extensions;
 
 public static class ControllerExtensions
 {
@@ -18,6 +19,14 @@ public static class ControllerExtensions
         if (playerPawnValue == null) return;
 
         playerPawnValue.GravityScale = gravity;
+    }
+    
+    public static void TeleportTo(this CCSPlayerController target, TeleportPosition position)
+    {
+        CCSPlayerPawn? playerPawnValue = target.PlayerPawn.Value;
+        if (playerPawnValue == null) return;
+        
+        playerPawnValue.Teleport(position.Position, position.Rotation);
     }
     
     public static void SetScale(this CCSPlayerController target, float value)
