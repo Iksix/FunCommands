@@ -17,4 +17,8 @@
 - `css_scale <#uid/#steamId/name/@...> <scale>` - Установить размер модели игроку `"fun_commands.slap"` 
 - `css_set_money <#uid/#steamId/name/@...> <money amount>` - Установить кол-во денег игроку `"fun_commands.set_money"` 
 - `css_add_money <#uid/#steamId/name/@...> <money amount>` - Выдать деньги игроку `"fun_commands.set_money"` 
-- `css_take_money <#uid/#steamId/name/@...> <money amount>` - Отнять деньги у игрока `"fun_commands.set_money"` 
+- `css_take_money <#uid/#steamId/name/@...> <money amount>` - Отнять деньги у игрока `"fun_commands.set_money"`
+- [1.0.1]
+- `css_savepos <position key>` - Сохранить позицию `"fun_commands.tp"`
+- `css_tp <#uid/#steamId/name/@...> <position key>` - Телепортироваться на позицию `"fun_commands.tp"` 
+- `css_pingtp <#uid/#steamId/name/@...> <true/false>` - Включить/выключить режим телепортации на метку `"fun_commands.pingtp"` 
