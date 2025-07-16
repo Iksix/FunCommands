@@ -1,7 +1,6 @@
 ﻿# [IksAdmin](https://github.com/Iksix/Iks_Admin) FunCommands
 
 ## Зависимости
-- [CS2TraceRay](https://github.com/schwarper/CS2TraceRay/)
 - [IksAdmin](https://github.com/Iksix/Iks_Admin)
 
 ## Обозначения
