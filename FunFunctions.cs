@@ -300,8 +300,11 @@ public static class FunFunctions
         if (health > target.PlayerPawn.Value!.MaxHealth)
         {
             target.PlayerPawn.Value.MaxHealth = health;
+            Utilities.SetStateChanged(target.PlayerPawn.Value, "CBaseEntity", "m_iMaxHealth");
         }
-		
+        
+        target.PlayerPawn.Value.Health = health;
+        
         Utilities.SetStateChanged(target.PlayerPawn.Value, "CBaseEntity", "m_iHealth");
         
         caller.Print(Localizer["Message.SetHp"].AReplace(
