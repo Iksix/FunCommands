@@ -8,7 +8,7 @@ namespace IksAdmin_FunCommands;
 public class Main : AdminModule
 {
     public override string ModuleName => "IksAdmin_FunCommands";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "iks__";
 
     public static PluginConfig Config = null!;
@@ -71,7 +71,7 @@ public class Main : AdminModule
         menu.AddMenuOption("fun_commands", Localizer["MenuTitle.FunCommands"], (p, _) =>
         {
             Menus.OpenFunMenu(p, menu);
-        });
+        }, viewFlags: AdminUtils.GetAllPermissionGroupFlags("fun_commands"));
         
         return HookResult.Continue;
     }

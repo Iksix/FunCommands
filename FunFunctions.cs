@@ -277,7 +277,9 @@ public static class FunFunctions
             return;
         }
 
-        target.InGameMoneyServices.Account -= Math.Abs(moneyAmount);
+        if (target.InGameMoneyServices.Account - Math.Abs(moneyAmount) < 0)
+            target.InGameMoneyServices.Account = 0;
+        else target.InGameMoneyServices.Account -= Math.Abs(moneyAmount);
         
         Utilities.SetStateChanged(target, "CCSPlayerController", "m_pInGameMoneyServices");
         
@@ -302,6 +304,8 @@ public static class FunFunctions
             target.PlayerPawn.Value.MaxHealth = health;
             Utilities.SetStateChanged(target.PlayerPawn.Value, "CBaseEntity", "m_iMaxHealth");
         }
+        
+        if (health < 1) health = 1;
         
         target.PlayerPawn.Value.Health = health;
         
