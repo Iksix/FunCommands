@@ -24,6 +24,6 @@
 - [1.0.4]
 - `css_shootspeed <#uid/#steamId/name/@...> <shootspeed/default>` - Увеличить скорость стрельбы `"fun_commands.shootspeed"` 
 - `css_set_damage <#uid/#steamId/name/@...> <damage/default>` - Установить урон `"fun_commands.set_damage"` 
-- `css_add_damage <#uid/#steamId/name/@...> <damage/default>` - Добавит бонус к урону `"fun_commands.add_damage"` 
+- `css_add_damage <#uid/#steamId/name/@...> <damage/default>` - Добавить бонус к урону `"fun_commands.add_damage"` 
 - `css_max_ammo <#uid/#steamId/name/@...> <ammo/default>` - Установить макс. кол-во патронов в обойме (Так же установит кол-во патронов и патроны для перезарядки) `"fun_commands.max_ammo"` 
 - `css_no_recoil <#uid/#steamId/name/@...> <true/false>` - Уменьшить(почти убрать) отдачу `"fun_commands.no_recoil"` 
