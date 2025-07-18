@@ -64,8 +64,40 @@ public static class Cmd
     {
         Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
         {
-            FunFunctions.SetSpeed(caller, target!, float.Parse(args[1]), identityType);
+            FunFunctions.SetScale(caller, target!, float.Parse(args[1]), identityType);
         }, blockedArgs: GetBlockedIdentifiers("scale"));
+    }
+    
+    public static void SetShootSpeed(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetShootSpeed(caller, target!, args[1] == "default" ? null : float.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("shootspeed"));
+    }
+    
+    public static void SetCustomDamage(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetCustomDamage(caller, target!, args[1] == "default" ? null : int.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("set_damage"));
+    }
+    
+    public static void SetBonusDamage(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetBonusDamage(caller, target!, args[1] == "default" ? null : int.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("add_damage"));
+    }
+    
+    public static void SetMaxAmmo(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetMaxAmmo(caller, target!, args[1] == "default" ? null : int.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("max_ammo"));
     }
     
     public static void SavePos(CCSPlayerController caller, List<string> args, CommandInfo _)
@@ -89,11 +121,19 @@ public static class Cmd
         }, blockedArgs: GetBlockedIdentifiers("pingtp"));
     }
     
+    public static void SetNoRecoil(CCSPlayerController caller, List<string> args, CommandInfo _)
+    {
+        Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
+        {
+            FunFunctions.SetNoRecoil(caller, target!, bool.Parse(args[1]), identityType);
+        }, blockedArgs: GetBlockedIdentifiers("no_recoil"));
+    }
+    
     public static void SetMoney(CCSPlayerController caller, List<string> args, CommandInfo _)
     {
         Api.DoActionWithIdentity(caller, args[0], (target, identityType) =>
         {
-            FunFunctions.SetScale(caller, target!, int.Parse(args[1]), identityType);
+            FunFunctions.SetMoney(caller, target!, int.Parse(args[1]), identityType);
         }, blockedArgs: GetBlockedIdentifiers("set_money"));
     }
     

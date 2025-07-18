@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
+using IksAdmin_FunCommands.Extensions;
 using IksAdminApi;
 using Microsoft.Extensions.Localization;
 
@@ -63,6 +64,26 @@ public static class Menus
             (_, _) => { TurnPingTp(caller, menu); },
             viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.pingtp"));
         
+        menu.AddMenuOption("shootspeed", Localizer["MenuOption.SetShootSpeed"],
+            (_, _) => { SetShootSpeed(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.shootspeed"));
+        
+        menu.AddMenuOption("custom_damage", Localizer["MenuOption.SetCustomDamage"],
+            (_, _) => { SetCustomDamage(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.set_damage"));
+        
+        menu.AddMenuOption("add_damage", Localizer["MenuOption.SetBonusDamage"],
+            (_, _) => { SetBonusDamage(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.add_damage"));
+        
+        menu.AddMenuOption("max_ammo", Localizer["MenuOption.SetMaxAmmo"],
+            (_, _) => { SetMaxAmmo(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.max_ammo"));
+        
+        menu.AddMenuOption("no_recoil", Localizer["MenuOption.SetNoRecoil"],
+            (_, _) => { SetNoRecoil(caller, menu); },
+            viewFlags: AdminUtils.GetCurrentPermissionFlags("fun_commands.no_recoil"));
+        
         menu.Open(caller);
     }
 
@@ -113,6 +134,29 @@ public static class Menus
         menu.Open(caller);
     }
     
+    private static void SetNoRecoil(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        var menu = Api.CreateMenu("select_player", Localizer["MenuOption.SetNoRecoil"], backMenu: backMenu);
+
+        foreach (var target in PlayersUtils.GetOnlinePlayers())
+        {
+            if (!Api.CanDoActionWithPlayer(caller.GetSteamId(), target.GetSteamId()))
+            {
+                continue;
+            }
+
+            var settings = target.GetWeaponSettings();
+            
+            menu.AddMenuOption(target.GetSteamId(), target.PlayerName + (settings.NoRecoil ? " [+]" : " [-]"), (_, _) =>
+            {
+                FunFunctions.SetNoRecoil(caller, target, !settings.NoRecoil);
+                SetNoRecoil(caller, backMenu);
+            });
+        }
+
+        menu.Open(caller);
+    }
+    
     private static void Teleport(CCSPlayerController caller, IDynamicMenu? backMenu)
     {
         OpenSelectAlivePlayer(caller, "teleport", backMenu, target =>
@@ -144,6 +188,90 @@ public static class Menus
         }
 
         menu.Open(caller);
+    }
+    
+    private static void SetShootSpeed(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "set_shootspeed", backMenu, target =>
+        {
+            var weapon = caller.GetActiveWeaponName();
+            
+            if (weapon == null)
+            {
+                caller.Print(Localizer["Error.MustHandleWeapon"]);
+                return;
+            }
+            
+            caller.Print(Localizer["Request.ShootSpeed"].AReplace(["weapon"], [weapon]));
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetShootSpeed(caller, target, amount == "default" ? null : float.Parse(amount));
+            });
+        }, includeBots: false);
+    }
+    
+    private static void SetCustomDamage(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "set_custom_damage", backMenu, target =>
+        {
+            var weapon = caller.GetActiveWeaponName();
+            
+            if (weapon == null)
+            {
+                caller.Print(Localizer["Error.MustHandleWeapon"]);
+                return;
+            }
+            
+            caller.Print(Localizer["Request.CustomDamage"].AReplace(["weapon"], [weapon]));
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetCustomDamage(caller, target, amount == "default" ? null : int.Parse(amount));
+            });
+        }, includeBots: false);
+    }
+    
+    private static void SetBonusDamage(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "set_bonus_damage", backMenu, target =>
+        {
+            var weapon = caller.GetActiveWeaponName();
+            
+            if (weapon == null)
+            {
+                caller.Print(Localizer["Error.MustHandleWeapon"]);
+                return;
+            }
+            
+            caller.Print(Localizer["Request.BonusDamage"].AReplace(["weapon"], [weapon]));
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetBonusDamage(caller, target, amount == "default" ? null : int.Parse(amount));
+            });
+        }, includeBots: false);
+    }
+    
+    private static void SetMaxAmmo(CCSPlayerController caller, IDynamicMenu? backMenu)
+    {
+        OpenSelectAlivePlayer(caller, "max_ammo", backMenu, target =>
+        {
+            var weapon = caller.GetActiveWeaponName();
+            
+            if (weapon == null)
+            {
+                caller.Print(Localizer["Error.MustHandleWeapon"]);
+                return;
+            }
+            
+            caller.Print(Localizer["Request.MaxAmmo"].AReplace(["weapon"], [weapon]));
+            
+            Api.HookNextPlayerMessage(caller, amount =>
+            {
+                FunFunctions.SetMaxAmmo(caller, target, amount == "default" ? null : int.Parse(amount));
+            });
+        });
     }
 
     private static void SetHp(CCSPlayerController caller, IDynamicMenu? backMenu)

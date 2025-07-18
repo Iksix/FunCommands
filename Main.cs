@@ -1,4 +1,6 @@
 ﻿using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Memory;
+using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 using CounterStrikeSharp.API.Modules.Menu;
 using IksAdminApi;
 using Microsoft.Extensions.Localization;
@@ -8,7 +10,7 @@ namespace IksAdmin_FunCommands;
 public class Main : AdminModule
 {
     public override string ModuleName => "IksAdmin_FunCommands";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.4";
     public override string ModuleAuthor => "iks__";
 
     public static PluginConfig Config = null!;
@@ -45,16 +47,29 @@ public class Main : AdminModule
         Api.RegisterPermission("fun_commands.hp", defaultFlag);
         Api.RegisterPermission("fun_commands.speed", defaultFlag);
         Api.RegisterPermission("fun_commands.scale", defaultFlag);
+        // [1.0.1]
         Api.RegisterPermission("fun_commands.tp", defaultFlag);
         Api.RegisterPermission("fun_commands.pingtp", defaultFlag);
+        // [1.0.4]
+        Api.RegisterPermission("fun_commands.shootspeed", defaultFlag);
+        Api.RegisterPermission("fun_commands.set_damage", defaultFlag);
+        Api.RegisterPermission("fun_commands.add_damage", defaultFlag);
+        Api.RegisterPermission("fun_commands.max_ammo", defaultFlag);
+        Api.RegisterPermission("fun_commands.no_recoil", defaultFlag);
         
         RegisterEventHandler<EventPlayerHurt>(FunFunctions.OnPlayerHurt);
         RegisterEventHandler<EventRoundEnd>(FunFunctions.OnRoundEnd);
         RegisterEventHandler<EventPlayerPing>(FunFunctions.OnPlayerPing, HookMode.Pre);
+        RegisterEventHandler<EventWeaponFire>(FunFunctions.OnWeaponFire, HookMode.Pre);
         
         RegisterListener<Listeners.OnClientDisconnect>(FunFunctions.OnClientDisconnect);
+        RegisterListener<Listeners.OnClientAuthorized>(FunFunctions.OnClientAuthorized);
+        
+        VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Hook(FunFunctions.OnTakeDamage, HookMode.Pre);
     }
+
     
+
     public override void Unload(bool hotReload)
     {
         base.Unload(hotReload);
@@ -62,6 +77,12 @@ public class Main : AdminModule
         DeregisterEventHandler<EventPlayerHurt>(FunFunctions.OnPlayerHurt);
         DeregisterEventHandler<EventRoundEnd>(FunFunctions.OnRoundEnd);
         DeregisterEventHandler<EventPlayerPing>(FunFunctions.OnPlayerPing, HookMode.Pre);
+        DeregisterEventHandler<EventWeaponFire>(FunFunctions.OnWeaponFire, HookMode.Pre);
+        
+        RemoveListener<Listeners.OnClientAuthorized>(FunFunctions.OnClientAuthorized);
+        RemoveListener<Listeners.OnClientDisconnect>(FunFunctions.OnClientDisconnect);
+        
+        VirtualFunctions.CBaseEntity_TakeDamageOldFunc.Unhook(FunFunctions.OnTakeDamage, HookMode.Pre);
     }
 
     private HookResult OnMenuOpen(CCSPlayerController player, IDynamicMenu menu, IMenu gameMenu)
@@ -188,6 +209,53 @@ public class Main : AdminModule
             "css_savepos <position key>",
             Cmd.SavePos,
             minArgs: 1
+        );
+        
+        // [1.0.4]
+        
+        Api.AddNewCommand(
+            "shootspeed",
+            "Set shoot speed for handle player weapon",
+            "fun_commands.shootspeed",
+            "css_shootspeed <#uid/#steamId/name/@...> <shootspeed/default>",
+            Cmd.SetShootSpeed,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "set_damage",
+            "Set shoot damage for handle player weapon",
+            "fun_commands.set_damage",
+            "css_set_damage <#uid/#steamId/name/@...> <damage/default>",
+            Cmd.SetCustomDamage,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "add_damage",
+            "Set shoot damage for handle player weapon",
+            "fun_commands.add_damage",
+            "css_add_damage <#uid/#steamId/name/@...> <damage/default>",
+            Cmd.SetBonusDamage,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "max_ammo",
+            "Set ammo and max ammo for handle player weapon",
+            "fun_commands.max_ammo",
+            "css_max_ammo <#uid/#steamId/name/@...> <ammo/default>",
+            Cmd.SetMaxAmmo,
+            minArgs: 2
+        );
+        
+        Api.AddNewCommand(
+            "no_recoil",
+            "Set no recoil for player weapon",
+            "fun_commands.no_recoil",
+            "css_no_recoil <#uid/#steamId/name/@...> <true/false>",
+            Cmd.SetNoRecoil,
+            minArgs: 2
         );
     }
 }

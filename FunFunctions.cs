@@ -1,12 +1,31 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Memory;
+using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 using CounterStrikeSharp.API.Modules.Utils;
 using IksAdmin_FunCommands.Extensions;
 using IksAdminApi;
 using Microsoft.Extensions.Localization;
 
 namespace IksAdmin_FunCommands;
+
+public class UserWeaponsSettings
+{
+    public Dictionary<string, float> CustomShootSpeed { get; set; } = []; 
+    
+    /// <summary>
+    /// В ивенте будет по формуле: CustomDamage
+    /// </summary>
+    public Dictionary<string, int> CustomDamage { get; set; } = []; 
+    
+    /// <summary>
+    /// В ивенте будет по формуле: Урон + CustomDamage
+    /// </summary>
+    public Dictionary<string, int> DamageBonus { get; set; } = []; 
+    
+    public bool NoRecoil { get; set; } = false; 
+}
 
 public static class FunFunctions
 {
@@ -31,6 +50,9 @@ public static class FunFunctions
     /// </summary>
     public static readonly Dictionary<string, Dictionary<string, TeleportPosition>> PlayersSavedTeleportPositions = [];
     
+    public static readonly Dictionary<string, UserWeaponsSettings> PlayersWeaponsSettings = [];
+
+    public static Dictionary<string, int> DefaultWeaponMaxAmmo = [];
     
     public static void RConVar(
         CCSPlayerController caller, 
@@ -168,6 +190,25 @@ public static class FunFunctions
         }
         
         caller.Print(Localizer["Message.TurnTeleportOnPing"].AReplace(
+            ["target", "value"],
+            [target.PlayerName, state]
+        ));
+    }
+    
+    public static void SetNoRecoil(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        bool state,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (target.IsBot) return;
+        
+        var slot = target.Slot;
+
+        var settings = target.GetWeaponSettings().NoRecoil = state;
+        
+        caller.Print(Localizer["Message.NoRecoil"].AReplace(
             ["target", "value"],
             [target.PlayerName, state]
         ));
@@ -317,6 +358,179 @@ public static class FunFunctions
         ));
     }
     
+    public static void SetBonusDamage(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        int? damageBonus,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+        
+        if (target.IsBot) return;
+        
+        var weapon = target.GetActiveWeaponName();
+
+        if (weapon == null)
+        {
+            caller.Print(Localizer["Error.MustHandleWeapon"]);
+            return;
+        }
+
+        var settings = target.GetWeaponSettings();
+
+        if (damageBonus == null)
+        {
+            settings.DamageBonus.Remove(weapon);
+            
+            caller.Print(Localizer["Message.BonusDamage"].AReplace(
+                ["target", "value", "weapon"],
+                [target.PlayerName, "default", weapon]
+            ));
+            
+            return;
+        }
+        
+        settings.DamageBonus[weapon] = (int)damageBonus;
+        
+        caller.Print(Localizer["Message.BonusDamage"].AReplace(
+            ["target", "value", "weapon"],
+            [target.PlayerName, damageBonus, weapon]
+        ));
+    }
+    
+    public static void SetMaxAmmo(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        int? ammo,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+        
+        if (target.IsBot) return;
+        
+        var weapon = target.GetActiveWeaponName();
+
+        if (weapon == null)
+        {
+            caller.Print(Localizer["Error.MustHandleWeapon"]);
+            return;
+        }
+        
+        var weaponBase = target.GetActiveWeapon()!;
+
+
+        if (!DefaultWeaponMaxAmmo.ContainsKey(weapon))
+        {
+
+            DefaultWeaponMaxAmmo[weapon] = weaponBase.VData!.MaxClip1;
+        }
+
+        if (ammo == null)
+        {
+            caller.Print(Localizer["Message.MaxAmmo"].AReplace(
+                ["target", "value", "weapon"],
+                [target.PlayerName, "default", weapon]
+            ));
+            
+            return;
+        }
+        
+        weaponBase.SetMaxAmmo(ammo);
+        
+        caller.Print(Localizer["Message.MaxAmmo"].AReplace(
+            ["target", "value", "weapon"],
+            [target.PlayerName, ammo, weapon]
+        ));
+    }
+    
+    public static void SetCustomDamage(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        int? damage,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+        
+        if (target.IsBot) return;
+        
+        var weapon = target.GetActiveWeaponName();
+
+        if (weapon == null)
+        {
+            caller.Print(Localizer["Error.MustHandleWeapon"]);
+            return;
+        }
+
+        var settings = target.GetWeaponSettings();
+
+        if (damage == null)
+        {
+            settings.CustomDamage.Remove(weapon);
+            
+            caller.Print(Localizer["Message.CustomDamage"].AReplace(
+                ["target", "value", "weapon"],
+                [target.PlayerName, "default", weapon]
+            ));
+            
+            return;
+        }
+        
+        settings.CustomDamage[weapon] = (int)damage;
+        
+        caller.Print(Localizer["Message.CustomDamage"].AReplace(
+            ["target", "value", "weapon"],
+            [target.PlayerName, damage, weapon]
+        ));
+    }
+    
+    public static void SetShootSpeed(
+        CCSPlayerController caller, 
+        CCSPlayerController target, 
+        float? shotSpeed,
+        IdentityType identityType = IdentityType.SteamId
+    )
+    {
+        if (!ValidateAliveTarget(caller, target, identityType))
+            return;
+        
+        if (target.IsBot) return;
+        
+        var weapon = target.GetActiveWeaponName();
+
+        if (weapon == null)
+        {
+            caller.Print(Localizer["Error.MustHandleWeapon"]);
+            return;
+        }
+
+        var settings = target.GetWeaponSettings();
+
+        if (shotSpeed == null)
+        {
+            settings.CustomShootSpeed.Remove(weapon);
+            
+            caller.Print(Localizer["Message.ShootSpeed"].AReplace(
+                ["target", "value", "weapon"],
+                [target.PlayerName, "default", weapon]
+            ));
+            
+            return;
+        }
+        
+        settings.CustomShootSpeed[weapon] = (float)shotSpeed;
+        
+        caller.Print(Localizer["Message.ShootSpeed"].AReplace(
+            ["target", "value", "weapon"],
+            [target.PlayerName, shotSpeed, weapon]
+        ));
+    }
+    
     public static void Slap(
         CCSPlayerController caller, 
         CCSPlayerController target,
@@ -403,6 +617,7 @@ public static class FunFunctions
 
         return true;
     }
+    
 
     public static HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
     {
@@ -447,5 +662,148 @@ public static class FunFunctions
     {
         PlayersSpeed.Remove(playerSlot);
         PlayersWithTeleportOnPing.Remove(playerSlot);
+        
+        var player = Utilities.GetPlayerFromSlot(playerSlot);
+        
+        if (player == null || player.AuthorizedSteamID == null) return;
+
+        PlayersWeaponsSettings.Remove(player.GetSteamId());
+    }
+    
+    public static HookResult OnTakeDamage(DynamicHook hook)
+    {
+        
+        var entity = hook.GetParam<CEntityInstance>(0);
+        var info = hook.GetParam<CTakeDamageInfo>(1);
+
+        if (!entity.IsValid || !info.Attacker.IsValid)
+            return HookResult.Continue;
+
+        if (entity.DesignerName != "player" && info.Attacker.Value?.DesignerName != "player")
+            return HookResult.Continue;
+
+        CCSPlayerPawn? playerPawn = entity.As<CCSPlayerPawn>();
+        CCSPlayerPawn? attackerPawn = info.Attacker.Value?.As<CCSPlayerPawn>();
+
+        if (attackerPawn == null) return HookResult.Continue;
+
+        CCSPlayerController? player = playerPawn.OriginalController.Value;
+        CCSPlayerController? attacker = attackerPawn.OriginalController.Value;
+
+        if (player == null) return HookResult.Continue;
+        if (attacker == null || attacker.AuthorizedSteamID == null) return HookResult.Continue;
+
+        var settings = attacker.GetWeaponSettings();
+
+        var weapon = attacker.GetActiveWeaponName();
+        
+        if (weapon == null) return HookResult.Continue;
+        
+        if (settings.CustomDamage.TryGetValue(weapon, out var customDamage))
+        {
+            info.Damage = customDamage;
+        }
+        else if (settings.DamageBonus.TryGetValue(weapon, out var damageBonus))
+        {
+            info.Damage += damageBonus;
+        }
+        
+        return HookResult.Continue;
+    }
+
+    public static HookResult OnWeaponFire(EventWeaponFire @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        
+        if (player == null || !player.IsValid || player.IsBot || player.AuthorizedSteamID == null) return HookResult.Continue;
+
+        var weaponName = @event.Weapon;
+        var settings = player.GetWeaponSettings();
+        
+        if (settings.NoRecoil)
+        {
+            Server.NextFrame(() =>
+            {
+                NoRecoil(player);
+            });
+        }
+        
+        if (!settings.CustomShootSpeed.TryGetValue(weaponName, out var speed))
+            return HookResult.Continue;
+        
+        Server.NextFrame(() =>
+        {
+            var weapon = player.GetActiveWeapon();
+
+            var tickCount = Server.TickCount;
+        
+            int rateOfFire;
+        
+            int nextTickAttack = weapon!.NextPrimaryAttackTick;
+        
+            rateOfFire = nextTickAttack - tickCount;
+        
+            rateOfFire = (int)(rateOfFire / speed);
+            weapon.NextPrimaryAttackTick = tickCount + rateOfFire + 1;
+
+            Utilities.SetStateChanged(weapon, "CBasePlayerWeapon", "m_nNextPrimaryAttackTick");
+            if (settings.NoRecoil)
+            {
+                NoRecoil(player);
+            }
+        });
+        
+        return HookResult.Continue;
+    }
+
+    public static void OnClientAuthorized(int playerSlot, SteamID steamId)
+    {
+        PlayersWeaponsSettings[steamId.SteamId64.ToString()] = new ();
+    }
+    
+    public static void NoRecoil(CCSPlayerController client)
+    {
+        if (client == null || client.IsBot) 
+        { 
+            return; 
+        } 
+        try 
+        { 
+            var weapon = client?.PlayerPawn.Value?.WeaponServices?.ActiveWeapon.Value; 
+            var weaponBase = new CCSWeaponBase(weapon!.Handle)!; 
+            var weaponData = weaponBase.VData!; 
+            weaponBase.FlRecoilIndex = 0;
+            weaponBase.IRecoilIndex = 0;
+            weaponBase.AccuracyPenalty = 0;
+            weaponData.InaccuracyFire.Values[0] = 0;
+            weaponData.InaccuracyFire.Values[1] = 0;
+            weaponData.InaccuracyMove.Values[0] = 0;
+            weaponData.InaccuracyLand.Values[0] = 0;
+            weaponData.InaccuracyJump.Values[0] = 0;
+            weaponData.InaccuracyMove.Values[1] = 0;
+            weaponData.InaccuracyLand.Values[1] = 0;
+            weaponData.InaccuracyJump.Values[1] = 0;
+
+            client.PlayerPawn.Value.AimPunchAngle.X = 0;
+            client.PlayerPawn.Value.AimPunchAngle.Y = 0;
+            client.PlayerPawn.Value.AimPunchAngle.Z = 0;
+            client.PlayerPawn.Value.AimPunchAngleVel.X = 0;
+            client.PlayerPawn.Value.AimPunchAngleVel.Y = 0;
+            client.PlayerPawn.Value.AimPunchAngleVel.Z = 0;
+
+            Server.NextFrame(() => {
+                Utilities.SetStateChanged(client.PlayerPawn.Value, "CCSPlayerPawn", "m_aimPunchAngle"); 
+                Utilities.SetStateChanged(client.PlayerPawn.Value, "CCSPlayerPawn", "m_aimPunchAngleVel"); 
+
+        
+                Utilities.SetStateChanged(weaponBase, "CCSWeaponBase", "m_flRecoilIndex"); 
+                Utilities.SetStateChanged(weaponBase, "CCSWeaponBase", "m_flRecoilIndex"); 
+                Utilities.SetStateChanged(weaponBase, "CCSWeaponBase", "m_fAccuracyPenalty"); 
+            }) ;
+        } 
+        catch (Exception e) 
+        { 
+            throw; 
+        } 
     }
 }
